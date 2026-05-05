@@ -17,6 +17,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CategoryPickerModal } from "@/components/todos/category-picker-modal";
 import { useTodos } from "@/context/todos-context";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -25,11 +26,12 @@ export function TodoDetailsScreen() {
   const theme = useTheme();
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { getTodo, updateTodo, deleteTodo } = useTodos();
+  const { getTodo, updateTodo, deleteTodo, categories } = useTodos();
 
   const todo = id ? getTodo(id) : undefined;
   const [title, setTitle] = useState(todo?.title ?? "");
   const [note, setNote] = useState(todo?.note ?? "");
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     if (todo) {
@@ -62,6 +64,15 @@ export function TodoDetailsScreen() {
     });
   };
 
+  const closePicker = () => {
+    setPickerOpen(false);
+  };
+
+  const setCategoryIds = (next: string[]) => {
+    if (!todo) return;
+    updateTodo(todo.id, { categoryIds: next });
+  };
+
   const onDelete = () => {
     if (!todo) return;
     Alert.alert("Delete todo", "This cannot be undone.", [
@@ -81,8 +92,23 @@ export function TodoDetailsScreen() {
     return null;
   }
 
+  const categoryIds = todo.categoryIds;
+  const categorySummary = (() => {
+    if (categoryIds.length === 0) return "Uncategorized";
+    const map = new Map(categories.map((c) => [c.id, c.name] as const));
+    const names = categoryIds.map((cid) => map.get(cid)).filter(Boolean) as string[];
+    return names.length ? names.join(", ") : "Uncategorized";
+  })();
+
   return (
     <>
+      <CategoryPickerModal
+        visible={pickerOpen}
+        categories={categories}
+        selectedIds={categoryIds}
+        onClose={closePicker}
+        onChange={setCategoryIds}
+      />
       <Stack.Screen
         options={{ title: title.trim() || "Todo", headerBackTitle: "Back" }}
       />
@@ -137,6 +163,35 @@ export function TodoDetailsScreen() {
                 },
               ]}
             />
+
+            <Text
+              style={[styles.label, { color: theme.colors.text, marginTop: 20 }]}
+            >
+              Categories
+            </Text>
+            <Pressable
+              onPress={() => setPickerOpen(true)}
+              style={[
+                styles.field,
+                styles.selectField,
+                {
+                  backgroundColor: theme.colors.card,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Choose categories"
+            >
+              <Text
+                style={[styles.selectValue, { color: theme.colors.text }]}
+                numberOfLines={2}
+              >
+                {categorySummary}
+              </Text>
+              <Text style={[styles.selectChevron, { color: theme.colors.text }]}>
+                ▼
+              </Text>
+            </Pressable>
 
             <View style={styles.actions}>
               <AnimatedPressable
@@ -211,6 +266,21 @@ const styles = StyleSheet.create({
   },
   noteField: {
     minHeight: 140,
+  },
+  selectField: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  selectValue: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  selectChevron: {
+    fontSize: 12,
+    opacity: 0.45,
+    paddingRight: 4,
   },
   actions: {
     marginTop: 28,

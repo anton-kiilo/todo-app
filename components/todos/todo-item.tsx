@@ -9,23 +9,39 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import { UNCATEGORIZED_LABEL } from "@/constants/categories";
+import type { Category } from "@/types/category";
 import type { Todo } from "@/types/todo";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Props = {
   todo: Todo;
+  categories: Category[];
   index: number;
   onToggleComplete: (id: string) => void;
 };
 
-export function TodoItem({ todo, index, onToggleComplete }: Props) {
+function labelsForTodo(todo: Todo, categories: Category[]) {
+  const map = new Map(categories.map((c) => [c.id, c.name] as const));
+  return todo.categoryIds.map((id) => map.get(id)).filter(Boolean) as string[];
+}
+
+export function TodoItem({ todo, categories, index, onToggleComplete }: Props) {
   const theme = useTheme();
   const scale = useSharedValue(1);
 
   const rowStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+
+  const resolved = labelsForTodo(todo, categories);
+  const tagLabels =
+    todo.categoryIds.length === 0
+      ? [UNCATEGORIZED_LABEL]
+      : resolved.length > 0
+        ? resolved
+        : [UNCATEGORIZED_LABEL];
 
   return (
     <Animated.View
@@ -85,6 +101,35 @@ export function TodoItem({ todo, index, onToggleComplete }: Props) {
                 {todo.note}
               </Text>
             ) : null}
+            <View style={styles.tags}>
+              {tagLabels.map((label, idx) => (
+                <View
+                  key={`${todo.id}-tag-${idx}-${label}`}
+                  style={[
+                    styles.tag,
+                    {
+                      backgroundColor: theme.dark
+                        ? "rgba(255,255,255,0.08)"
+                        : "rgba(0,0,0,0.06)",
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.tagText,
+                      {
+                        color: theme.colors.text,
+                        opacity: label === UNCATEGORIZED_LABEL ? 0.55 : 0.9,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {label}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
         </AnimatedPressable>
       </Animated.View>
@@ -136,5 +181,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 14,
     opacity: 0.65,
+  },
+  tags: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 8,
+  },
+  tag: {
+    maxWidth: "100%",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

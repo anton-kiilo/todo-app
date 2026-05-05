@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { CategoriesSettingsSection } from "@/components/categories/categories-settings-section";
 import type { AppearancePreference } from "@/context/settings-context";
 import { useSettings } from "@/context/settings-context";
 
@@ -94,6 +95,8 @@ export function SettingsScreen() {
             onSelect={setAppearance}
           />
         </View>
+
+        <CategoriesSettingsSection />
 
         <Text style={[styles.sectionTitle, styles.sectionSpaced, { color: theme.colors.text }]}>
           Todos

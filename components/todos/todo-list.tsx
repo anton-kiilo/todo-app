@@ -1,15 +1,17 @@
 import { useTheme } from "@react-navigation/native";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { LinearTransition } from "react-native-reanimated";
+import type { Category } from "@/types/category";
 import type { Todo } from "@/types/todo";
 import { TodoItem } from "./todo-item";
 
 type Props = {
   todos: Todo[];
+  categories: Category[];
   onToggleComplete: (id: string) => void;
 };
 
-export function TodoList({ todos, onToggleComplete }: Props) {
+export function TodoList({ todos, categories, onToggleComplete }: Props) {
   const theme = useTheme();
 
   if (todos.length === 0) {
@@ -36,6 +38,7 @@ export function TodoList({ todos, onToggleComplete }: Props) {
           <TodoItem
             key={todo.id}
             todo={todo}
+            categories={categories}
             index={index}
             onToggleComplete={onToggleComplete}
           />
