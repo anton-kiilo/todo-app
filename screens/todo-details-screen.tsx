@@ -1,6 +1,6 @@
 import { useTheme } from "@react-navigation/native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -32,6 +32,7 @@ export function TodoDetailsScreen() {
   const [title, setTitle] = useState(todo?.title ?? "");
   const [note, setNote] = useState(todo?.note ?? "");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const isClosingRef = useRef(false);
 
   useEffect(() => {
     if (todo) {
@@ -39,12 +40,6 @@ export function TodoDetailsScreen() {
       setNote(todo.note);
     }
   }, [todo]);
-
-  useEffect(() => {
-    if (id && !todo) {
-      router.back();
-    }
-  }, [id, todo]);
 
   const saveScale = useSharedValue(1);
   const deleteScale = useSharedValue(1);
@@ -55,6 +50,23 @@ export function TodoDetailsScreen() {
   const deleteStyle = useAnimatedStyle(() => ({
     transform: [{ scale: deleteScale.value }],
   }));
+
+  const closeScreen = useCallback(() => {
+    if (isClosingRef.current) return;
+    isClosingRef.current = true;
+
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace("/");
+  }, []);
+
+  useEffect(() => {
+    if (id && !todo) {
+      closeScreen();
+    }
+  }, [id, todo, closeScreen]);
 
   const persist = () => {
     if (!todo) return;
@@ -82,7 +94,6 @@ export function TodoDetailsScreen() {
         style: "destructive",
         onPress: () => {
           deleteTodo(todo.id);
-          router.back();
         },
       },
     ]);
@@ -206,7 +217,7 @@ export function TodoDetailsScreen() {
                 }}
                 onPress={() => {
                   persist();
-                  router.back();
+                  closeScreen();
                 }}
                 style={[
                   styles.primaryBtn,
